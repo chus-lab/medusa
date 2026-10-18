@@ -22,7 +22,7 @@ class AudioEngine extends EventTarget {
     const c=this.context;this.analyser=c.createAnalyser();this.analyser.fftSize=2048;this.analyser.smoothingTimeConstant=.35;
     const splitter=c.createChannelSplitter(2),stereo=c.createGain();stereo.channelCount=2;stereo.channelCountMode='explicit';stereo.channelInterpretation='speakers';this.left=c.createAnalyser();this.right=c.createAnalyser();this.left.fftSize=this.right.fftSize=2048;
     source.connect(this.analyser);source.connect(stereo);stereo.connect(splitter);splitter.connect(this.left,0);splitter.connect(this.right,1);
-    this.output=c.createGain();this.output.gain.value=audible?(this.muted?0:this.volume):0;source.connect(this.output);this.output.connect(c.destination);
+    this.output=c.createGain();this.output.gain.value=audible?(this.muted?0:this.volume):0;source.connect(this.output);this.output.connect(c.destination);if(this.recordDest)source.connect(this.recordDest);
     this.nodes=[this.analyser,stereo,splitter,this.left,this.right,this.output];
     this.wave=new Float32Array(2048);this.leftWave=new Float32Array(2048);this.rightWave=new Float32Array(2048);this.spectrum=new Float32Array(1024);
   }
@@ -80,6 +80,8 @@ class AudioEngine extends EventTarget {
     else if(this.stream){await this.contextReady();this.newSession(Math.floor(Math.random()*10000));this.started=this.context.currentTime;this.status='playing';this.message='新的曲目生命週期已開始。';this.notify();}
   }
   finish(){if(!this.stream)return;this.offset=this.elapsed;this.stopNodes();this.status='ended';this.message='本曲已結束，已停止收音並保留族群。連接音訊即可開始下一首。';this.context?.suspend().catch(()=>{});this.notify();}
+  // Recording tap: the music at full level (independent of the playback volume) as a MediaStream.
+  recordStream(){if(!this.context)return null;if(!this.recordDest){this.recordDest=this.context.createMediaStreamDestination();try{this.source?.connect(this.recordDest);}catch{}}return this.recordDest.stream;}
   setVolume(v){this.volume=v;if(this.output&&this.mode==='file')this.output.gain.setTargetAtTime(this.muted?0:v,this.context.currentTime,.03);}
   sample(dt){
     if(this.status!=='playing'||!this.analyser)return this.features.value;

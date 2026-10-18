@@ -49,7 +49,9 @@
       if(this.finished||this.members.length>=8)return false;
       const target=1+Math.min(7,Math.floor(clamp(f.density)*8));
       this.stable=target>this.members.length&&f.energy>.025?this.stable+Math.min(dt,.15):0;
-      if(this.stable>=3&&now-this.lastBirth>=6){this.add(now,f);this.stable=0;return true;}return false;
+      // Harder to be born as the population grows: needs 5 s of sustained density, and the gap after the
+      // previous birth lengthens with each member (8 s, 13 s, 18 s … 38 s).
+      if(this.stable>=5&&now-this.lastBirth>=8+(this.members.length-1)*5){this.add(now,f);this.stable=0;return true;}return false;
     }
   }
   const api={Features,Population,clamp,smooth,empty};if(typeof module!=='undefined')module.exports=api;else root.MusicModel=api;
